@@ -11,6 +11,8 @@
 - `a/` 판단 담당: 경로(`route.js`), 시간표 계산(`planner.js`), 조작 패널과 시뮬레이션(`sim.js`)
 - `b/` 소리·화면·콘텐츠 담당: 콘텐츠(`content.js`), 음성(`audio.js`), 차량 화면(`screen.js`, `style.css`)
 - `phone/` (A 담당) 휴대폰 동반 앱 화면: 쿠폰함, 광고주 등록과 성과 (진짜 앱이 아니라 같은 페이지 안의 시뮬레이션)
+- 판단 규칙의 기준은 웹의 `a/planner.js`다. 수치나 규칙을 바꾸면 안드로이드 이식본과 시험 항목도 함께 맞춘다.
+- 시간표 엔진의 입력은 장소까지 남은 거리(`distanceM`)다. 지금은 `route.js`의 데모 경로가 계산하고, 실제 앱에서는 내비·위치 데이터로 바꾼다.
 - `shared/app.js` 두 사람의 약속. 바꿀 때는 서로 합의한다.
 
 ## 두 사람의 약속
@@ -23,7 +25,7 @@
 - B가 A에게: `App.onCouponSaved(contentId)` 쿠폰 저장
 
 ## 콘텐츠 형식
-`b/content.js`에 작성한다. 필드: `id`, `type`(`story` 또는 `ad`), `name`, `category`, `lat`, `lon`, `importance`(1~5), `short`(약 10초), `long`(약 40초).
+`b/content.js`에 작성한다. 배열 부분은 순수 JSON으로 유지한다 (함수, 주석, 끝 쉼표 금지). 안드로이드 앱이 같은 배열을 읽고, `node a/planner.test.js`가 형식을 검사한다. 필드: `id`, `type`(`story` 또는 `ad`), `name`, `category`, `lat`, `lon`, `importance`(1~5), `short`(약 10초), `long`(약 40초).
 홍보는 추가로 `sponsor`, `bid`(1~5), `coupon`을 넣는다.
 
 ## 규칙

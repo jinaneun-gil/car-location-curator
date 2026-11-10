@@ -32,6 +32,10 @@
       });
       return cumulative[best];
     },
+    // Position source for the demo: distance ahead of the car along the replayed route.
+    ahead(posM, items) {
+      return items.map(item => ({ ...item, distanceM: item.routeM - posM }));
+    },
     pointAt(m) {
       for (let i = 1; i < POINTS.length; i++) {
         if (m <= cumulative[i]) {

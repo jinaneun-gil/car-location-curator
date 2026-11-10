@@ -1,6 +1,12 @@
 // Run with: node a/planner.test.js
 const assert = require('node:assert');
-const { plan, DEFAULTS } = require('./planner.js');
+const fs = require('node:fs');
+const path = require('node:path');
+const { plan: planner, DEFAULTS } = require('./planner.js');
+
+// Tests describe positions along a route; the planner only sees distance ahead.
+const ahead = (posM, items) => items.map(i => ({ ...i, distanceM: i.routeM - posM }));
+const plan = (s, items) => planner({ ...s, maneuvers: ahead(s.posM, s.maneuvers) }, ahead(s.posM, items));
 
 const text = seconds => 'ㄱ'.repeat(Math.round(seconds * DEFAULTS.charsPerSec));
 const story = (id, routeM, extra) => ({
@@ -36,6 +42,14 @@ assert.strictEqual(noConsent, 'food', 'story interests alone never personalize a
 
 const reach = plan(state({ speedMps: 10 }), [{ ...ad('r', 1000), reachM: 800 }])[0];
 assert.ok(reach.start >= 20, 'an ad waits until the car is inside its registered reach');
+
+// The Android app parses the same array, so it must stay plain JSON.
+const contentFile = fs.readFileSync(path.join(__dirname, '../b/content.js'), 'utf8');
+const data = JSON.parse(contentFile.slice(contentFile.indexOf('['), contentFile.lastIndexOf(']') + 1));
+for (const c of data) {
+  for (const key of ['id', 'type', 'name', 'category', 'lat', 'lon', 'short']) assert.ok(key in c, `${c.id} needs ${key}`);
+  assert.ok(c.type === 'ad' ? c.sponsor && c.bid : c.importance && c.long, `${c.id} has the fields for its type`);
+}
 
 // Full route dry run with the real demo data.
 global.App = { contents: [], route: null };

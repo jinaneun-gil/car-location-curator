@@ -30,7 +30,7 @@
 
   function plannerState() {
     return {
-      posM: s.posM, speedMps: s.speedKmh / 3.6, maneuvers: App.route.maneuvers,
+      speedMps: s.speedKmh / 3.6, maneuvers: App.route.ahead(s.posM, App.route.maneuvers),
       driverBusy: s.driverBusy, played: s.played, interests: s.interests, adInterests: adInterests(),
       elapsedSec: s.clock - s.driveStart, adsPlayed: s.adsPlayed,
       secSinceLastAd: s.clock - s.lastAdEnd, lastCategory: s.lastCategory,
@@ -62,7 +62,7 @@
       s.posM += s.speedKmh / 3.6;
       if (s.posM >= App.route.length) { s.posM = App.route.length; setGear('P'); }
       announceManeuvers();
-      const seq = App.planner.plan(plannerState(), App.contents.filter(isActive));
+      const seq = App.planner.plan(plannerState(), App.route.ahead(s.posM, App.contents.filter(isActive)));
       showPlan(seq);
       if (!s.playing && s.clock >= s.restUntil && seq[0] && seq[0].start <= 1) {
         const item = seq[0];

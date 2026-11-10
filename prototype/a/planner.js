@@ -1,5 +1,7 @@
 // Decides what to play by building a schedule for the next few minutes.
 // Re-run on every tick; only the first item of the schedule is ever played.
+// Input is distance ahead in metres (distanceM on places and maneuvers), so the planner
+// does not care whether that came from a replayed route or from real navigation data.
 (function () {
   const DEFAULTS = {
     horizonSec: 180,
@@ -24,7 +26,7 @@
   // Times when the driver should not be spoken to: around turns and during vehicle signals.
   function quietWindows(state, o, v) {
     const windows = state.maneuvers
-      .map(m => (m.routeM - state.posM) / v)
+      .map(m => m.distanceM / v)
       .filter(eta => eta > -o.maneuverAfterSec && eta < o.horizonSec)
       .map(eta => [eta - o.maneuverBeforeSec, eta + o.maneuverAfterSec]);
     if (state.driverBusy) windows.push([0, o.busySec]);
@@ -41,7 +43,7 @@
     const items = [];
     const near = contents
       .filter(c => !state.played.has(c.id))
-      .map(c => ({ c, eta: (c.routeM - state.posM) / v }))
+      .map(c => ({ c, eta: c.distanceM / v }))
       .filter(x => x.eta > -o.afterSec && x.eta < o.horizonSec + o.leadSec)
       .sort((a, b) => a.eta - b.eta)
       .slice(0, o.maxContents);
