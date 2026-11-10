@@ -10,3 +10,4 @@
 .phone ul { list-style: none; margin: 0; padding: 0; }
 .phone li { padding: 8px 0; border-bottom: 1px solid var(--line); line-height: 1.5; }
 .phone .note { margin: 0; font-size: 12px; }
+.phone .preview { margin: 0; padding: 10px; border-radius: 8px; background: #2a313b; line-height: 1.5; }

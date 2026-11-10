@@ -4,6 +4,7 @@
   const root = $('phone');
   const CATEGORIES = [['cafe', '카페'], ['food', '맛집'], ['experience', '체험'], ['event', '행사'], ['charging', '충전']];
   const coupons = [];
+  const used = new Set();
   const today = new Date();
   const dateValue = d => d.toLocaleDateString('sv');
   const monthLater = new Date(today.getTime() + 30 * 86400000);
@@ -45,17 +46,37 @@
         </select></label>
         <label>안내 문구 <input name="text" required maxlength="50" placeholder="약 8초 분량으로 짧게"></label>
         <label>쿠폰 (선택) <input name="coupon" maxlength="20" placeholder="예: 음료 10% 할인"></label>
+        <p id="adPreview" class="preview" role="status"></p>
         <p class="note">운전 습관이나 속도로 사람을 고르지 않습니다. 동의한 사용자에게만 관심 업종이 반영됩니다.</p>
         <button type="submit">등록 신청</button>
       </form>
       <p id="adResult" class="note" role="status"></p>
       <h3>내 광고 성과</h3>
       <ul id="adStats"></ul>
+      <button id="clearAds">등록 광고 초기화</button>
     </section>
     <section id="user" hidden>
       <h3>저장한 쿠폰</h3>
       <ul id="wallet"></ul>
     </section>`;
+
+  const STORAGE_KEY = 'curator.registeredAds';
+  const loadAds = () => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
+  };
+  const saveAds = ads => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(ads)); } catch { /* demo still works without storage */ }
+  };
+
+  // Spells out the chosen conditions so they can be explained on screen.
+  function showPreview() {
+    const form = $('adForm');
+    const label = name => form.elements[name].selectedOptions[0].text;
+    const km = +form.elements.reachM.value / 1000;
+    $('adPreview').textContent =
+      `${label('place')} 도착 ${km}km 전(60km/h 기준 약 ${km}분 전)부터 안내합니다. ` +
+      `기간 ${form.elements.from.value} ~ ${form.elements.to.value}, 시간대 ${label('hours')}, 우선순위 ${label('bid')}.`;
+  }
 
   function showTab(biz) {
     $('biz').hidden = !biz;
@@ -87,19 +108,36 @@
       return;
     }
     const place = App.contentById(value('place'));
-    App.addAd({
+    const ad = {
       id: `reg-${Date.now()}`, type: 'ad', name: value('sponsor'), sponsor: value('sponsor'),
       category: value('category'), lat: place.lat, lon: place.lon, bid: +value('bid'),
       coupon: value('coupon'), short: `광고입니다. ${value('text')}`,
       reachM: +value('reachM'), from: value('from'), to: value('to'),
       hours: value('hours').split(',').map(Number),
-    });
+    };
+    App.addAd(ad);
+    saveAds([...loadAds(), ad]);
     $('adResult').textContent = '검수 통과 (시뮬레이션) · 게시되었습니다.';
     e.target.reset();
+    showPreview();
+  };
+
+  $('adForm').oninput = showPreview;
+  $('clearAds').onclick = () => {
+    saveAds([]);
+    location.reload();
   };
 
   App.saveCoupon = c => {
     if (!coupons.includes(c)) coupons.push(c);
+  };
+
+  $('wallet').onclick = e => {
+    const c = coupons.find(item => item.id === e.target.dataset.use);
+    if (!c) return;
+    used.add(c.id);
+    App.log(`쿠폰 사용: ${c.sponsor}`);
+    App.phoneUpdate();
   };
 
   App.phoneUpdate = () => {
@@ -108,7 +146,11 @@
       const s = App.stats[c.id] || { plays: 0, goes: 0, coupons: 0 };
       return `<li><b>${c.sponsor}</b><br>음성 노출 ${s.plays} · 경유지 추가 ${s.goes} · 쿠폰 저장 ${s.coupons}</li>`;
     }).join('') || '<li>등록한 광고가 없습니다</li>';
-    $('wallet').innerHTML = coupons.map(c => `<li><b>${c.sponsor}</b><br>${c.coupon}</li>`).join('') || '<li>저장한 쿠폰이 없습니다</li>';
+    $('wallet').innerHTML = coupons.map(c => `<li><b>${c.sponsor}</b><br>${c.coupon}<br>${
+      used.has(c.id) ? '사용 완료' : `<button data-use="${c.id}">매장에서 사용</button>`
+    }</li>`).join('') || '<li>저장한 쿠폰이 없습니다</li>';
   };
+  loadAds().forEach(App.addAd);
+  showPreview();
   App.phoneUpdate();
 })();
