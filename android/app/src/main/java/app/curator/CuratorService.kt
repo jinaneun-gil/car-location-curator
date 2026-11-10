@@ -60,6 +60,8 @@ class CuratorService : Service() {
     private var playDeadline = 0.0
     private var restUntil = 0.0
     private var ttsReady = false
+    private var sentences = emptyList<String>()
+    private var sentenceIndex = 0
     private lateinit var navi: NaviHelper
     private var naviReady = false
     private var routeActive = false
@@ -158,11 +160,11 @@ class CuratorService : Service() {
                     override fun onReady() = Unit
                     override fun onStart() = Unit
                     override fun onUpdatedRms(rms: Double) = Unit
-                    override fun onDone() = handler.post { finishSpeech() }.let { }
+                    override fun onDone() = handler.post { speakNext() }.let { }
                     override fun onStop() = handler.post { finishSpeech() }.let { }
                     override fun onError(errorType: ErrorType) {
-                        log("tts error $errorType")
-                        handler.post { finishSpeech() }
+                        log("tts error $errorType on: ${sentences.getOrNull(sentenceIndex - 1)}")
+                        handler.post { speakNext() }
                     }
                 })
                 ttsReady = true
@@ -170,6 +172,16 @@ class CuratorService : Service() {
             }
             override fun onFailure(errorType: ErrorType) = log("tts init failed $errorType")
         })
+    }
+
+    // One sentence per request, so a failed sentence does not lose the rest of the text.
+    private fun speakNext() {
+        if (current == null) return
+        if (sentenceIndex >= sentences.size) {
+            finishSpeech()
+            return
+        }
+        tts.speak(sentences[sentenceIndex++], true)
     }
 
     private fun finishSpeech() {
@@ -230,7 +242,10 @@ class CuratorService : Service() {
         Now.playing = place
         if (Now.heard.none { it.id == place.id }) Now.heard.add(place)
         log("play ${next.id} ${next.version} at ${posM.toInt()}m")
-        tts.speak(if (next.version == "long") place.long else place.short, true)
+        val text = if (next.version == "long") place.long else place.short
+        sentences = text.split(Regex("(?<=[.!?])\s+")).filter { it.isNotBlank() }
+        sentenceIndex = 0
+        speakNext()
     }
 
     private fun restartDemo() {
