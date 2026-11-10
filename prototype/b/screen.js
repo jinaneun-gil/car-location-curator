@@ -77,6 +77,7 @@
   }
 
   // Short code shown under the QR; stands in for a server-issued coupon number.
+  // The QR prefix follows the package name (app.curator), so renaming the app does not change it.
   function couponCode(id) {
     let h = 7;
     for (const ch of id + new Date().toLocaleDateString('sv')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
@@ -86,7 +87,7 @@
   function qrCard() {
     const c = App.contentById(couponOpen);
     const code = couponCode(c.id);
-    const qr = window.QR ? window.QR.svg(`GILTTARA:COUPON:${c.id}:${code}`) : '<p>QR 준비 중</p>';
+    const qr = window.QR ? window.QR.svg(`CURATOR:COUPON:${c.id}:${code}`) : '<p>QR 준비 중</p>';
     const saved = savedCoupons.has(c.id);
     return `<section class="qr-card" aria-label="쿠폰 QR">
       <div class="qr-image">${qr}</div>
