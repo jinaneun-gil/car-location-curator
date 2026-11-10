@@ -17,7 +17,8 @@
 - `a/` 판단 담당: 경로(`route.js`), 시간표 계산(`planner.js`), 조작 패널과 시뮬레이션(`sim.js`)
 - `b/` 소리·화면·콘텐츠 담당: 콘텐츠(`content.js`), 음성(`audio.js`), 차량 화면(`screen.js`, `style.css`)
 - `phone/` (A 담당) 휴대폰 동반 앱 화면: 쿠폰함, 광고주 등록과 성과 (진짜 앱이 아니라 같은 페이지 안의 시뮬레이션)
-- 판단 규칙의 기준은 웹의 `a/planner.js`다. 수치나 규칙을 바꾸면 안드로이드 이식본과 시험 항목도 함께 맞춘다.
+- 판단 규칙의 기준은 웹의 `a/planner.js`다. 수치나 규칙을 바꾸면 `android/.../Planner.kt`와 `PlannerTest.kt`도 함께 맞춘다.
+- 시연 경로를 바꾸면 `android/app/src/main/assets/route.json`도 다시 만든다.
 - 시간표 엔진의 입력은 장소까지 남은 거리(`distanceM`)다. 지금은 `route.js`의 데모 경로가 계산하고, 실제 앱에서는 내비·위치 데이터로 바꾼다.
 - `shared/app.js` 두 사람의 약속. 바꿀 때는 서로 합의한다.
 

@@ -3,15 +3,22 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+// The app reads the same content file as the web prototype.
+val copyContent = tasks.register<Copy>("copyContent") {
+    from("../../prototype/b/content.js")
+    into(layout.buildDirectory.dir("generated/sharedAssets"))
+}
+
 android {
-    namespace = "test.probe"
+    namespace = "app.curator"
     compileSdk = 34
     useLibrary("android.car")
     defaultConfig {
-        applicationId = "test.probe"
+        applicationId = "app.curator"
         minSdk = 28
         targetSdk = 34
     }
+    sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/sharedAssets"))
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -19,10 +26,11 @@ android {
     kotlinOptions { jvmTarget = "17" }
 }
 
+tasks.named("preBuild") { dependsOn(copyContent) }
+
 dependencies {
     implementation("ai.pleos.playground:Vehicle:2.3.2")
-    implementation("ai.pleos.playground:NaviHelper:3.0.5")
     implementation("ai.pleos.playground:TextToSpeech:3.3.1")
-    implementation("ai.pleos.playground:SpeechToText:3.3.1")
-    implementation("ai.pleos.playground:FusedLocation:1.1.3")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }

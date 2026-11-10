@@ -32,20 +32,10 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Create test speech
-        run: |
-          sudo apt-get update -q && sudo apt-get install -yq espeak-ng ffmpeg
-          espeak-ng -v ko -s 120 -w /tmp/speech.wav "가 볼래"
-          mkdir -p android/app/src/main/assets
-          ffmpeg -loglevel error -f lavfi -t 0.5 -i anullsrc=r=16000:cl=mono -i /tmp/speech.wav -f lavfi -t 1.5 -i anullsrc=r=16000:cl=mono \
-            -filter_complex "[1]aresample=16000,aformat=channel_layouts=mono[s];[0][s][2]concat=n=3:v=0:a=1" \
-            -ar 16000 -ac 1 -f s16le android/app/src/main/assets/test_audio.pcm
-          ls -l android/app/src/main/assets
-
       - name: Build app
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-          gradle -p android :app:assembleDebug --no-daemon --stacktrace
+          gradle -p android :app:testDebugUnitTest :app:assembleDebug --no-daemon --stacktrace
 
       - name: Enable KVM
         run: |
@@ -110,7 +100,7 @@ jobs:
           sleep 90
           "$ADB" install -g -r android/app/build/outputs/apk/debug/app-debug.apk 2>&1 | tee out/install.txt
           "$ADB" logcat -c
-          "$ADB" shell am start -n test.probe/.MainActivity 2>&1 | tee out/start.txt
+          "$ADB" shell am start -n app.curator/.MainActivity 2>&1 | tee out/start.txt
           sleep 40
           "$ADB" exec-out screencap -p > out/1-parked.png || true
           "$ADB" emu geo fix 126.31 33.46 2>&1 | tee out/geo.txt || true
@@ -125,12 +115,12 @@ jobs:
           done
           curl -s -m 10 "$VC/vehicle/state" > out/state.json || true
           "$ADB" exec-out screencap -p > out/2-driving.png || true
-          sleep 70
-          "$ADB" exec-out screencap -p > out/3-after-route.png || true
+          sleep 150
+          "$ADB" exec-out screencap -p > out/3-later.png || true
           "$ADB" shell dumpsys activity activities | grep -E 'ResumedActivity' > out/resumed.txt || true
           "$ADB" logcat -d > out/logcat.txt || true
-          grep ' PROBE' out/logcat.txt | sed -E 's/^.*PROBE *: //' > out/probe.txt || true
-          cat out/probe.txt
+          grep ' CURATOR' out/logcat.txt | sed -E 's/^[0-9-]+ ([0-9:]+)[^ ]* .*CURATOR *: / /' > out/curator.txt || true
+          cat out/curator.txt
 
       - name: Upload results
         if: always()
