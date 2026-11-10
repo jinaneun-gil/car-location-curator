@@ -10,6 +10,7 @@ window.App = {
   interruptForNavi(text) {},
   setMode(mode) {},
   showVehicle(state) {},
+  showWaypoint(name) {},
 
   // Implemented by A.
   onFinished(contentId) {},

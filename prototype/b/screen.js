@@ -92,6 +92,11 @@
 
   App.setMode = next => { mode = next; render(); };
 
+  App.showWaypoint = name => {
+    $('waypoint').textContent = `경유지 추가됨: ${name}`;
+    $('waypoint').hidden = false;
+  };
+
   App.showNowPlaying = id => {
     nowPlaying = id;
     if (!heard.includes(id)) heard.push(id);

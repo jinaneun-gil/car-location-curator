@@ -24,7 +24,7 @@
 ## 두 사람의 약속
 - A가 B에게: `App.play({ contentId, version })` (`version`은 `short` 또는 `long`)
 - A가 B에게: `App.interruptForNavi(text)` 내비 안내 때문에 설명을 멈추고 안내를 말한다
-- A가 B에게: `App.setMode('driving' | 'parked')`, `App.showVehicle(state)`
+- A가 B에게: `App.setMode('driving' | 'parked')`, `App.showVehicle(state)`, `App.showWaypoint(name)`
 - B가 A에게: `App.onFinished(contentId)` 재생이 끝남
 - B가 A에게: `App.onCommand('next' | 'stop' | 'go')` 버튼이나 음성 명령
 - B가 A에게: `App.setPreferences({ consent, interests })` 맞춤 광고 동의 여부와 고른 관심사
@@ -40,7 +40,7 @@
 - 맞춤 광고에는 직접 고른 관심사와 쿠폰 저장 이력만 쓴다. 속도, 브레이크, 경로 같은 운전 데이터로 사람을 타기팅하지 않는다.
 - 광고주가 고를 수 있는 노출 조건은 위치, 노출 범위, 기간, 시간대, 업종, 우선순위뿐이다. 속도나 운전 습관을 조건으로 넣지 않는다.
 - 동의는 동의 버튼을 누른 경우만 인정한다. 철회하면 쿠폰 이력과 관심사를 즉시 지운다.
-- 경로와 콘텐츠의 좌표는 임시값이다. 시연 전에 실제 지도로 교체한다.
+- 경로는 애월~곽지 일주서로 실제 도로 좌표다 (OpenStreetMap 기여자, 영상 끝에 출처 표기). 콘텐츠 좌표는 임시값이니 실제 장소로 바꾼다. 경로에서 멀면 재생 시점이 어긋난다.
 - 화면과 음성은 직접 브라우저에서 확인한 뒤에만 완료로 친다.
 - 저장소와 영상에 실명, 계정 정보가 드러나지 않게 한다.
 - 영상과 기획서에 차량 신호는 시뮬레이션이라고 밝힌다.

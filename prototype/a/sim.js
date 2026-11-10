@@ -96,7 +96,10 @@
   App.onCommand = command => {
     App.log(`명령: ${command}`);
     if (command === 'go' && s.playing) {
-      App.log(`경유지 추가: ${App.contentById(s.playing.id).name}`);
+      const place = App.contentById(s.playing.id).name;
+      App.log(`경유지 추가: ${place}`);
+      App.showWaypoint(place);
+      App.interruptForNavi(`${place}, 경유지로 추가했습니다.`);
       if (s.playing.isAd) { stat(s.playing.id).goes++; App.phoneUpdate(); }
     }
   };

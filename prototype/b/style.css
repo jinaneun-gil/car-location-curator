@@ -11,7 +11,8 @@ button { font: inherit; color: var(--text); background: #2a313b; border: 1px sol
 .speed small { margin-left: 6px; color: var(--muted); }
 .gearbox { font-size: 32px; color: var(--accent); }
 .tbt { color: var(--muted); }
-.navi { border-left: 1px solid var(--line); padding: 12px; }
+.navi { border-left: 1px solid var(--line); padding: 12px; position: relative; }
+.waypoint { position: absolute; left: 16px; right: 16px; top: 12px; margin: 0; padding: 12px; border-radius: 10px; background: var(--accent); color: #06231c; font-weight: 700; text-align: center; }
 .navi svg { width: 100%; height: 100%; }
 .road { fill: none; stroke: #5b6675; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
 .story { fill: var(--accent); }
