@@ -100,7 +100,7 @@ jobs:
           sleep 90
           "$ADB" install -g -r android/app/build/outputs/apk/release/app-release.apk 2>&1 | tee out/install.txt
           "$ADB" logcat -c
-          "$ADB" shell am start -n app.curator/.MainActivity --ez testRoute true 2>&1 | tee out/start.txt
+          "$ADB" shell am start -n app.curator/.MainActivity 2>&1 | tee out/start.txt
           # On first boot the speech model takes about four minutes to unpack after the first request.
           sleep 300
           "$ADB" exec-out screencap -p > out/1-parked.png || true
@@ -116,18 +116,8 @@ jobs:
           done
           curl -s -m 10 "$VC/vehicle/state" > out/state.json || true
           "$ADB" exec-out screencap -p > out/2-driving.png || true
-          # TEMPORARY: start a nearby route, then add a waypoint with the "go" button.
-          sleep 5
-          "$ADB" exec-out screencap -p > out/3-test-route.png || true
-          "$ADB" shell am start -n app.curator/.MainActivity
-          sleep 8
-          "$ADB" exec-out screencap -p > out/4-back.png || true
-          "$ADB" shell input tap 978 800
-          sleep 15
-          "$ADB" exec-out screencap -p > out/5-waypoint.png || true
-          "$ADB" shell am start -n app.curator/.MainActivity
           sleep 100
-          "$ADB" exec-out screencap -p > out/6-later.png || true
+          "$ADB" exec-out screencap -p > out/3-later.png || true
           "$ADB" shell dumpsys activity activities | grep -E 'ResumedActivity' > out/resumed.txt || true
           "$ADB" logcat -d > out/logcat.txt || true
           grep ' CURATOR' out/logcat.txt | sed -E 's/^[0-9-]+ ([0-9:]+)[^ ]* .*CURATOR *: /\1 /' > out/curator.txt || true
