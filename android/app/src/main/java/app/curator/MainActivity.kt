@@ -123,7 +123,8 @@ class MainActivity : Activity() {
 
     private fun render() {
         val manager = car.getCarManager(Car.CAR_UX_RESTRICTION_SERVICE) as CarUxRestrictionsManager
-        val driving = manager.currentCarUxRestrictions.isRequiresDistractionOptimization
+        // The restriction state is null while the car service is reconnecting.
+        val driving = manager.currentCarUxRestrictions?.isRequiresDistractionOptimization ?: false
         val playing = Now.playing
         notice.text = Now.notice
         drivingControls.visibility = if (driving) View.VISIBLE else View.GONE
