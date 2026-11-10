@@ -97,7 +97,7 @@ class MainActivity : Activity() {
         spacerView = spacer
         car = Car.createCar(this)
         startForegroundService(Intent(this, CuratorService::class.java))
-        if (intent.getBooleanExtra("testRoute", false)) Now.onCommand?.invoke("test-route") // TEMPORARY
+        if (intent.getBooleanExtra("testRoute", false)) handler.postDelayed({ Now.onCommand?.invoke("test-route") }, 20000) // TEMPORARY
         render()
     }
 
