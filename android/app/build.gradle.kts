@@ -18,6 +18,10 @@ android {
         minSdk = 28
         targetSdk = 34
     }
+    buildTypes {
+        // ponytail: release is signed with the debug key for the contest APK; add a real keystore before App Market submission.
+        release { signingConfig = signingConfigs.getByName("debug") }
+    }
     sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/sharedAssets"))
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

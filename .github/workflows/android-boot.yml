@@ -35,7 +35,7 @@ jobs:
       - name: Build app
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-          gradle -p android :app:testDebugUnitTest :app:assembleDebug --no-daemon --stacktrace
+          gradle -p android :app:testDebugUnitTest :app:assembleRelease --no-daemon --stacktrace
 
       - name: Enable KVM
         run: |
@@ -98,7 +98,7 @@ jobs:
         run: |
           ADB="$ANDROID_HOME/platform-tools/adb"
           sleep 90
-          "$ADB" install -g -r android/app/build/outputs/apk/debug/app-debug.apk 2>&1 | tee out/install.txt
+          "$ADB" install -g -r android/app/build/outputs/apk/release/app-release.apk 2>&1 | tee out/install.txt
           "$ADB" logcat -c
           "$ADB" shell am start -n app.curator/.MainActivity 2>&1 | tee out/start.txt
           sleep 40
@@ -129,6 +129,14 @@ jobs:
           name: boot-results
           path: out
           retention-days: 3
+
+      - name: Upload APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 7
 
       - name: Report
         if: always()
