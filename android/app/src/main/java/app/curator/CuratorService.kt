@@ -164,11 +164,16 @@ class CuratorService : Service() {
                     override fun onStop() = handler.post { finishSpeech() }.let { }
                     override fun onError(errorType: ErrorType) {
                         log("tts error $errorType on: ${sentences.getOrNull(sentenceIndex - 1)}")
-                        handler.post { speakNext() }
+                        // The on-device model is prepared after the first failed request; give it time.
+                        handler.post {
+                            finishSpeech()
+                            restUntil = clock + 30
+                        }
                     }
                 })
                 ttsReady = true
                 log("tts ready")
+                tts.speak("안내를 시작합니다.", true)
             }
             override fun onFailure(errorType: ErrorType) = log("tts init failed $errorType")
         })
