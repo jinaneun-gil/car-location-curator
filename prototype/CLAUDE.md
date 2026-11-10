@@ -7,6 +7,12 @@
 설치할 것은 없다. `index.html`을 Chrome으로 연다.
 판단 엔진 시험: `node a/planner.test.js`
 
+## 담당자
+- **A = 대표자**: `a/`, `phone/`, `../android/` 담당
+- **B = 팀원**: `b/` 담당
+
+작업을 시작할 때 사용자에게 A인지 B인지 먼저 확인하고, 그 담당 폴더만 수정한다.
+
 ## 담당 폴더 (자기 폴더만 수정)
 - `a/` 판단 담당: 경로(`route.js`), 시간표 계산(`planner.js`), 조작 패널과 시뮬레이션(`sim.js`)
 - `b/` 소리·화면·콘텐츠 담당: 콘텐츠(`content.js`), 음성(`audio.js`), 차량 화면(`screen.js`, `style.css`)
