@@ -118,7 +118,22 @@ class CuratorService : Service() {
         when (command) {
             "next" -> if (current != null) tts.stop()
             "go" -> (Now.playing ?: Now.heard.lastOrNull())?.let(::addToRoute)
+            "test-route" -> startTestRoute() // TEMPORARY: remove after the waypoint test
         }
+    }
+
+    // TEMPORARY: the emulator navigation sits near Seoul and cannot route to Jeju from CI.
+    private var testMode = false
+
+    private fun startTestRoute() {
+        testMode = true
+        navi.requestRoute(
+            RouteInfo(
+                latitude = 37.48544722, longitude = 127.03636666, displayLongitude = null, displayLatitude = null,
+                poiName = "42dot", poiId = "36khp37hh8gqcm5nqhe5", poiSubId = "0", address = "서울시 강남구 남부순환로 2621",
+            ),
+        )
+        log("test route requested")
     }
 
     // Navigation needs a destination first, and allows at most two waypoints.
@@ -139,9 +154,11 @@ class CuratorService : Service() {
         } else if (waypoints < 2) {
             navi.addWaypoint(
                 RequestWaypointInfo(
-                    latitude = place.lat, longitude = place.lon,
+                    latitude = if (testMode) 37.41275833 else place.lat,
+                    longitude = if (testMode) 127.09481944 else place.lon,
                     waypointIndex = if (waypoints == 0) WaypointIndex.FIRST else WaypointIndex.SECOND,
-                    poiId = "", poiName = place.name, poiSubId = "0", address = place.name,
+                    poiId = if (testMode) "36khp2hdj2cfcm5nqhe3" else "",
+                    poiName = place.name, poiSubId = "0", address = place.name,
                 ),
             )
             waypoints++
