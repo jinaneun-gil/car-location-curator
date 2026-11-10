@@ -119,7 +119,7 @@ jobs:
           "$ADB" exec-out screencap -p > out/3-later.png || true
           "$ADB" shell dumpsys activity activities | grep -E 'ResumedActivity' > out/resumed.txt || true
           "$ADB" logcat -d > out/logcat.txt || true
-          grep ' CURATOR' out/logcat.txt | sed -E 's/^[0-9-]+ ([0-9:]+)[^ ]* .*CURATOR *: / /' > out/curator.txt || true
+          grep ' CURATOR' out/logcat.txt | sed -E 's/^[0-9-]+ ([0-9:]+)[^ ]* .*CURATOR *: /\1 /' > out/curator.txt || true
           cat out/curator.txt
 
       - name: Upload results
