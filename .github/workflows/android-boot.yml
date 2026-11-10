@@ -1,0 +1,142 @@
+name: android-boot
+
+on:
+  workflow_dispatch:
+    inputs:
+      gpu:
+        description: Emulator -gpu mode
+        default: swiftshader_indirect
+
+jobs:
+  boot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      IMAGE_URL: https://nexus-playground.pleos.ai/repository/raw-releases/connect-avd/2.x/crp_car_emulator.zip
+      GPU_MODE: ${{ inputs.gpu || 'swiftshader_indirect' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost
+          df -h /
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Create test speech
+        run: |
+          sudo apt-get update -q && sudo apt-get install -yq espeak-ng ffmpeg
+          espeak-ng -v ko -s 120 -w /tmp/speech.wav "가 볼래"
+          mkdir -p android/app/src/main/assets
+          ffmpeg -loglevel error -f lavfi -t 0.5 -i anullsrc=r=16000:cl=mono -i /tmp/speech.wav -f lavfi -t 1.5 -i anullsrc=r=16000:cl=mono \
+            -filter_complex "[1]aresample=16000,aformat=channel_layouts=mono[s];[0][s][2]concat=n=3:v=0:a=1" \
+            -ar 16000 -ac 1 -f s16le android/app/src/main/assets/test_audio.pcm
+          ls -l android/app/src/main/assets
+
+      - name: Build app
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          gradle -p android :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install emulator and Pleos image
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" emulator platform-tools > /dev/null
+          curl -fsSL -o /tmp/image.zip "$IMAGE_URL"
+          unzip -q /tmp/image.zip -d /tmp/image
+          rm /tmp/image.zip
+          IMAGE_DIR=$(dirname "$(find /tmp/image -name system.img | head -1)")
+          DEST="$ANDROID_HOME/system-images/android-34/pleos_car_emulator/x86_64"
+          mkdir -p "$(dirname "$DEST")"
+          mv "$IMAGE_DIR" "$DEST"
+
+      - name: Create AVD
+        run: |
+          AVD="$HOME/.android/avd"
+          mkdir -p "$AVD/pleos.avd"
+          printf 'avd.ini.encoding=UTF-8\npath=%s/pleos.avd\ntarget=android-34\n' "$AVD" > "$AVD/pleos.ini"
+          cat > "$AVD/pleos.avd/config.ini" <<'CONFIG'
+          AvdId=pleos
+          abi.type=x86_64
+          hw.cpu.arch=x86_64
+          hw.cpu.ncore=2
+          hw.ramSize=4096
+          hw.gpu.enabled=yes
+          hw.lcd.width=1920
+          hw.lcd.height=1080
+          hw.lcd.density=160
+          hw.keyboard=yes
+          disk.dataPartition.size=6G
+          image.sysdir.1=system-images/android-34/pleos_car_emulator/x86_64/
+          tag.id=android-automotive
+          CONFIG
+          sed -i 's/^ *//' "$AVD/pleos.avd/config.ini"
+
+      - name: Boot
+        id: boot
+        run: |
+          mkdir -p out
+          nohup "$ANDROID_HOME/emulator/emulator" -avd pleos -no-window -no-audio -no-snapshot \
+            -no-boot-anim -gpu "$GPU_MODE" -verbose > out/emulator.log 2>&1 &
+          ADB="$ANDROID_HOME/platform-tools/adb"
+          for i in $(seq 1 60); do
+            sleep 30
+            state=$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+            echo "$((i / 2)) min: boot_completed=${state:-none}"
+            if [ "$state" = "1" ]; then echo "booted=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          done
+          echo "booted=false" >> "$GITHUB_OUTPUT"
+
+      - name: Run probe app
+        if: steps.boot.outputs.booted == 'true'
+        run: |
+          ADB="$ANDROID_HOME/platform-tools/adb"
+          sleep 90
+          "$ADB" install -g -r android/app/build/outputs/apk/debug/app-debug.apk 2>&1 | tee out/install.txt
+          "$ADB" logcat -c
+          "$ADB" shell am start -n test.probe/.MainActivity 2>&1 | tee out/start.txt
+          sleep 40
+          "$ADB" exec-out screencap -p > out/1-parked.png || true
+          "$ADB" emu geo fix 126.31 33.46 2>&1 | tee out/geo.txt || true
+          "$ADB" forward tcp:8088 tcp:8088
+          VC=http://127.0.0.1:8088
+          curl -s -m 10 -X POST "$VC/browser/session?client=ci" -w ' session %{http_code}\n' | tee out/console.txt
+          curl -s -m 10 -X PUT "$VC/vehicle/gear?gear=Drive" -w ' gear %{http_code}\n' | tee -a out/console.txt
+          for i in 1 2 3 4 5 6 7; do
+            curl -s -m 20 -X POST "$VC/browser/session?client=ci" > /dev/null || true
+            curl -s -m 20 -X PUT "$VC/vehicle/controls?speed=60&accelerator=30&brake=0" -w ' controls %{http_code}\n' >> out/console.txt || true
+            sleep 5
+          done
+          curl -s -m 10 "$VC/vehicle/state" > out/state.json || true
+          "$ADB" exec-out screencap -p > out/2-driving.png || true
+          sleep 70
+          "$ADB" exec-out screencap -p > out/3-after-route.png || true
+          "$ADB" shell dumpsys activity activities | grep -E 'ResumedActivity' > out/resumed.txt || true
+          "$ADB" logcat -d > out/logcat.txt || true
+          grep ' PROBE' out/logcat.txt | sed -E 's/^.*PROBE *: //' > out/probe.txt || true
+          cat out/probe.txt
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boot-results
+          path: out
+          retention-days: 3
+
+      - name: Report
+        if: always()
+        run: test "${{ steps.boot.outputs.booted }}" = "true"

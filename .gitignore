@@ -1,3 +1,6 @@
 .omc/
 emulator-boot-test/
 .playwright-mcp/
+build/
+.gradle/
+local.properties
