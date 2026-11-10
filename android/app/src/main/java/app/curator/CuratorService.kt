@@ -243,7 +243,7 @@ class CuratorService : Service() {
         if (Now.heard.none { it.id == place.id }) Now.heard.add(place)
         log("play ${next.id} ${next.version} at ${posM.toInt()}m")
         val text = if (next.version == "long") place.long else place.short
-        sentences = text.split(Regex("(?<=[.!?])\s+")).filter { it.isNotBlank() }
+        sentences = text.split(Regex("(?<=[.!?])\\s+")).filter { it.isNotBlank() }
         sentenceIndex = 0
         speakNext()
     }
