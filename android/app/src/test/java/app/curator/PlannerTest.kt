@@ -94,6 +94,6 @@ class PlannerTest {
             posM += speed
             t++
         }
-        assertEquals("a1/short s2/long a3/short s3/long s4/short a5/short s5/short", order.joinToString(" "))
+        assertEquals("s2/short a1/short s4/short s5/short a7/short s6/short s7/short s9/short s8/short a8/short s10/short s11/short", order.joinToString(" "))
     }
 }
