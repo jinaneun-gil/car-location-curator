@@ -42,7 +42,7 @@ object Now {
 class CuratorService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var vehicle: Vehicle
-    private lateinit var car: Car
+    private var car: Car? = null
     private lateinit var tts: TextToSpeech
     private lateinit var route: Route
     private lateinit var places: List<Place>
@@ -222,7 +222,9 @@ class CuratorService : Service() {
         vehicle.getGear().getCurrentGearSelectionState({ Now.gear = it.toString() }, { log("gear failed $it") })
         vehicle.getTurnSignal().getCurrentTurnSignalState({ turnOn = it.toString() != "OFF" }, { log("turn failed $it") })
         vehicle.getBrake().getCurrentBrakePedalStatus({ braking = it.toString() == "true" }, { log("brake failed $it") })
-        val properties = car.getCarManager(Car.PROPERTY_SERVICE) as CarPropertyManager
+        // createCar returns null while the car service restarts; try again on the next tick.
+        val connected = car ?: Car.createCar(this)?.also { car = it } ?: return
+        val properties = connected.getCarManager(Car.PROPERTY_SERVICE) as CarPropertyManager
         Now.speedKmh = properties.getFloatProperty(VehiclePropertyIds.PERF_VEHICLE_SPEED, 0) * 3.6
     }
 

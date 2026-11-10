@@ -101,7 +101,8 @@ jobs:
           "$ADB" install -g -r android/app/build/outputs/apk/release/app-release.apk 2>&1 | tee out/install.txt
           "$ADB" logcat -c
           "$ADB" shell am start -n app.curator/.MainActivity 2>&1 | tee out/start.txt
-          sleep 40
+          # On first boot the speech model takes about four minutes to unpack after the first request.
+          sleep 300
           "$ADB" exec-out screencap -p > out/1-parked.png || true
           "$ADB" emu geo fix 126.31 33.46 2>&1 | tee out/geo.txt || true
           "$ADB" forward tcp:8088 tcp:8088
