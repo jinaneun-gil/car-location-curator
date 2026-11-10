@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>프로토타입</title>
+<link rel="stylesheet" href="b/style.css">
+<link rel="stylesheet" href="phone/phone.css">
+</head>
+<body>
+<main class="stage">
+  <section class="car" aria-label="차량 화면 시뮬레이션">
+    <div class="status"><span id="appName"></span><span>프로토타입 · 차량 신호는 시뮬레이션</span></div>
+    <div class="driving">
+      <div class="speed"><b id="speed">0</b><small>km/h</small></div>
+      <div id="gear" class="gearbox">P</div>
+      <div id="tbt" class="tbt"></div>
+    </div>
+    <div class="navi"><svg id="map" viewBox="0 0 400 400" role="img" aria-label="경로 지도"></svg></div>
+    <div id="panel" class="app"></div>
+    <div class="gnb">앱 목록 · 즐겨찾는 앱 · 공조</div>
+  </section>
+
+  <aside id="console" class="console" aria-label="차량 신호 조작 패널">
+    <h1>차량 신호 조작</h1>
+    <button id="showPhone">폰 앱 보기</button>
+    <button id="start">주행 시작</button>
+    <div class="row">
+      <button id="gearD">기어 D</button>
+      <button id="gearP">기어 P</button>
+    </div>
+    <label>속도 <output id="speedOut">60</output> km/h
+      <input id="speedInput" type="range" min="5" max="100" step="5" value="60">
+    </label>
+    <label><input id="signal" type="checkbox"> 방향지시등</label>
+    <button id="naviNow">내비 안내 지금 발생</button>
+    <h2>다음 3분 시간표</h2>
+    <ol id="plan"></ol>
+    <h2>로그</h2>
+    <ol id="log"></ol>
+  </aside>
+
+  <aside id="phone" class="phone" aria-label="휴대폰 동반 앱 시뮬레이션" hidden></aside>
+</main>
+
+<script src="shared/app.js"></script>
+<script src="a/route.js"></script>
+<script src="b/content.js"></script>
+<script src="a/planner.js"></script>
+<script src="b/audio.js"></script>
+<script src="b/screen.js"></script>
+<script src="a/sim.js"></script>
+<script src="phone/phone.js"></script>
+</body>
+</html>
