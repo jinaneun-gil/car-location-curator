@@ -19,7 +19,8 @@ jobs:
 
       - name: Free disk space
         run: |
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/.ghcup             /usr/share/swift /usr/local/lib/node_modules /opt/hostedtoolcache/CodeQL "$ANDROID_HOME/ndk"
+          sudo docker image prune -af > /dev/null
           df -h /
 
       - uses: actions/setup-java@v4
@@ -54,6 +55,8 @@ jobs:
 
       - name: Install emulator and Pleos image
         run: |
+          rm -rf ~/.gradle/caches ~/.gradle/wrapper
+          df -h /
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" emulator platform-tools > /dev/null
           curl -fsSL -o /tmp/image.zip "$IMAGE_URL"
           unzip -q /tmp/image.zip -d /tmp/image
