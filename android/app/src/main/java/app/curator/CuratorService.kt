@@ -1,5 +1,13 @@
 package app.curator
 
+import ai.pleos.playground.navi.constants.NaviErrorCode
+import ai.pleos.playground.navi.constants.WaypointIndex
+import ai.pleos.playground.navi.data.RequestWaypointInfo
+import ai.pleos.playground.navi.data.RouteInfo
+import ai.pleos.playground.navi.data.RouteStartInfo
+import ai.pleos.playground.navi.data.WaypointChangedInfo
+import ai.pleos.playground.navi.helper.NaviHelper
+import ai.pleos.playground.navi.helper.listener.NaviHelperEventListener
 import ai.pleos.playground.tts.TextToSpeech
 import ai.pleos.playground.tts.constant.ErrorType
 import ai.pleos.playground.tts.constant.Mode
@@ -25,6 +33,8 @@ object Now {
     @Volatile var gear = "GEAR_PARK"
     @Volatile var speedKmh = 0.0
     @Volatile var playing: Place? = null
+    @Volatile var notice = ""
+    @Volatile var onCommand: ((String) -> Unit)? = null
     val heard = java.util.concurrent.CopyOnWriteArrayList<Place>()
 }
 
@@ -50,6 +60,10 @@ class CuratorService : Service() {
     private var playDeadline = 0.0
     private var restUntil = 0.0
     private var ttsReady = false
+    private lateinit var navi: NaviHelper
+    private var naviReady = false
+    private var routeActive = false
+    private var waypoints = 0
 
     private fun log(text: String) { Log.i("CURATOR", text) }
 
@@ -68,7 +82,72 @@ class CuratorService : Service() {
         vehicle = Vehicle(this).also { it.initialize() }
         car = Car.createCar(this)
         startTts()
+        startNavi()
+        Now.onCommand = { command -> handler.post { handleCommand(command) } }
         handler.postDelayed(::tick, 3000)
+    }
+
+    private fun startNavi() {
+        navi = NaviHelper(applicationContext)
+        navi.initialize(
+            onConnected = {
+                navi.addListener(object : NaviHelperEventListener {
+                    override fun onRouteStarted(routeStartInfo: RouteStartInfo) {
+                        routeActive = true
+                        log("navi route started $routeStartInfo")
+                    }
+                    override fun onRouteCancelled() {
+                        routeActive = false
+                        waypoints = 0
+                    }
+                    override fun onWaypointChanged(waypointChangedInfo: WaypointChangedInfo) =
+                        log("navi waypoint changed $waypointChangedInfo")
+                    override fun onError(errorCode: NaviErrorCode) = log("navi error $errorCode")
+                })
+                naviReady = true
+                log("navi ready")
+            },
+            onFailed = { log("navi failed $it") },
+        )
+    }
+
+    private fun handleCommand(command: String) {
+        log("command $command")
+        when (command) {
+            "next" -> if (current != null) tts.stop()
+            "go" -> (Now.playing ?: Now.heard.lastOrNull())?.let(::addToRoute)
+        }
+    }
+
+    // Navigation needs a destination first, and allows at most two waypoints.
+    private fun addToRoute(place: Place) {
+        if (!naviReady) {
+            Now.notice = "내비 연결을 기다리고 있어요"
+            return
+        }
+        if (!routeActive) {
+            navi.requestRoute(
+                RouteInfo(
+                    latitude = place.lat, longitude = place.lon, displayLongitude = null, displayLatitude = null,
+                    poiName = place.name, poiId = "", poiSubId = "0", address = place.name,
+                ),
+            )
+            Now.notice = "${place.name}(으)로 안내를 시작합니다"
+            log("route requested ${place.id}")
+        } else if (waypoints < 2) {
+            navi.addWaypoint(
+                RequestWaypointInfo(
+                    latitude = place.lat, longitude = place.lon,
+                    waypointIndex = if (waypoints == 0) WaypointIndex.FIRST else WaypointIndex.SECOND,
+                    poiId = "", poiName = place.name, poiSubId = "0", address = place.name,
+                ),
+            )
+            waypoints++
+            Now.notice = "${place.name} 경유지 추가"
+            log("waypoint requested ${place.id}")
+        } else {
+            Now.notice = "경유지는 두 곳까지 추가할 수 있어요"
+        }
     }
 
     private fun startTts() {
