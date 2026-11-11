@@ -2,7 +2,7 @@
 (function () {
   const $ = id => document.getElementById(id);
   const root = $('phone');
-  const CATEGORIES = [['cafe', '카페'], ['food', '맛집'], ['experience', '체험'], ['event', '행사'], ['charging', '충전']];
+  const CATEGORIES = [['cafe', '카페'], ['food', '맛집'], ['experience', '체험'], ['event', '행사'], ['charging', '충전'], ['stay', '숙소'], ['shop', '편의점']];
   const coupons = [];
   const used = new Set();
   const today = new Date();
@@ -97,7 +97,8 @@
   $('adForm').onsubmit = e => {
     e.preventDefault();
     const f = new FormData(e.target);
-    const value = key => f.get(key).trim();
+    // Strip markup characters: every screen renders these fields as HTML.
+    const value = key => f.get(key).trim().replace(/[<>&"]/g, '');
     if (value('from') > value('to')) {
       $('adResult').textContent = '종료일이 시작일보다 빠릅니다.';
       return;
