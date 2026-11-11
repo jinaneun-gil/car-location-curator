@@ -103,6 +103,8 @@ jobs:
           "$ADB" shell am start -n app.curator/.MainActivity 2>&1 | tee out/start.txt
           # On first boot the speech model takes about four minutes to unpack after the first request.
           sleep 300
+          "$ADB" shell am start -n app.curator/.MainActivity > /dev/null || true
+          sleep 3
           "$ADB" exec-out screencap -p > out/1-parked.png || true
           "$ADB" emu geo fix 126.31 33.46 2>&1 | tee out/geo.txt || true
           "$ADB" forward tcp:8088 tcp:8088
@@ -115,12 +117,19 @@ jobs:
             sleep 5
           done
           curl -s -m 10 "$VC/vehicle/state" > out/state.json || true
+          "$ADB" shell am start -n app.curator/.MainActivity > /dev/null || true
+          sleep 3
           "$ADB" exec-out screencap -p > out/2-driving.png || true
           sleep 100
+          "$ADB" shell am start -n app.curator/.MainActivity > /dev/null || true
+          sleep 3
           "$ADB" exec-out screencap -p > out/3-later.png || true
+          curl -s -m 20 -X POST "$VC/browser/session?client=ci" > /dev/null || true
           curl -s -m 20 -X PUT "$VC/vehicle/controls?speed=0&accelerator=0&brake=50" -w ' stop %{http_code}\n' >> out/console.txt || true
           curl -s -m 20 -X PUT "$VC/vehicle/gear?gear=Park" -w ' park %{http_code}\n' >> out/console.txt || true
           sleep 5
+          "$ADB" shell am start -n app.curator/.MainActivity > /dev/null || true
+          sleep 3
           "$ADB" exec-out screencap -p > out/4-parked-after.png || true
           "$ADB" shell dumpsys activity activities | grep -E 'ResumedActivity' > out/resumed.txt || true
           "$ADB" logcat -d > out/logcat.txt || true
