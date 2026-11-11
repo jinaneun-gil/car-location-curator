@@ -202,7 +202,7 @@ class MainActivity : Activity() {
                 playing.isAd -> showChip("광고", AD)
                 else -> showChip(topic(playing), STORY)
             }
-            title.text = playing?.name ?: "다음 이야기를 준비하고 있어요"
+            title.text = playing?.name ?: "다음 이야기를 준비 중"
             if (playing != null) {
                 val ahead = (playing.routeM - Now.posM).toInt()
                 val where = if (ahead > 50) "${ahead}m 앞" else "지금 지나는 곳"

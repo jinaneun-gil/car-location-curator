@@ -192,7 +192,7 @@ class CuratorService : Service() {
             finishSpeech()
             return
         }
-        Now.progress = sentenceIndex.toFloat() / sentences.size
+        Now.progress = (sentenceIndex + 1f) / sentences.size
         tts.speak(sentences[sentenceIndex++], true)
     }
 
