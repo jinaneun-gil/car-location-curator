@@ -58,9 +58,12 @@ class Route(val points: List<Pair<Double, Double>>, val maneuversM: List<Double>
         return hypot(x, y) * 6371000
     }
 
-    fun project(lat: Double, lon: Double): Double {
+    fun project(lat: Double, lon: Double): Double = locate(lat, lon).first
+
+    // Distance along the route of the nearest route point, and how far the fix is from it.
+    fun locate(lat: Double, lon: Double): Pair<Double, Double> {
         val best = points.indices.minByOrNull { dist(points[it], lat to lon) } ?: 0
-        return cumulative[best]
+        return cumulative[best] to dist(points[best], lat to lon)
     }
 
     fun onRoute(places: List<Place>) = places.map { it.copy(routeM = project(it.lat, it.lon)) }

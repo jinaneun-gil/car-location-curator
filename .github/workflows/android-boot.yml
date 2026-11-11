@@ -111,6 +111,23 @@ jobs:
           VC=http://127.0.0.1:8088
           curl -s -m 10 -X POST "$VC/browser/session?client=ci" -w ' session %{http_code}\n' | tee out/console.txt
           curl -s -m 10 -X PUT "$VC/vehicle/gear?gear=Drive" -w ' gear %{http_code}\n' | tee -a out/console.txt
+          # GPS along the demo route at 60 km/h, one fix per second; the app should switch to "position from gps".
+          python3 - android/app/src/main/assets/route.json > out/fixes.txt <<'PY'
+          import json, math, sys
+          pts = json.load(open(sys.argv[1]))["points"]
+          def d(a, b):
+              k = math.pi / 180
+              return math.hypot((b[1] - a[1]) * k * math.cos((a[0] + b[0]) / 2 * k), (b[0] - a[0]) * k) * 6371000
+          walked, i, step = 0.0, 0, 60 / 3.6
+          while i < len(pts) - 1:
+              seg = d(pts[i], pts[i + 1])
+              if walked > seg:
+                  walked -= seg; i += 1; continue
+              t = walked / seg if seg else 0
+              print(f"{pts[i][1] + (pts[i + 1][1] - pts[i][1]) * t:.6f} {pts[i][0] + (pts[i + 1][0] - pts[i][0]) * t:.6f}")
+              walked += step
+          PY
+          (while read lon lat; do "$ADB" emu geo fix "$lon" "$lat" > /dev/null 2>&1; sleep 1; done < out/fixes.txt) &
           for i in 1 2 3 4 5 6 7; do
             curl -s -m 20 -X POST "$VC/browser/session?client=ci" > /dev/null || true
             curl -s -m 20 -X PUT "$VC/vehicle/controls?speed=60&accelerator=30&brake=0" -w ' controls %{http_code}\n' >> out/console.txt || true
@@ -132,6 +149,7 @@ jobs:
           sleep 3
           "$ADB" exec-out screencap -p > out/4-parked-after.png || true
           "$ADB" shell dumpsys activity activities | grep -E 'ResumedActivity' > out/resumed.txt || true
+          "$ADB" shell dumpsys media_session > out/media_session.txt || true
           "$ADB" logcat -d > out/logcat.txt || true
           grep ' CURATOR' out/logcat.txt | sed -E 's/^[0-9-]+ ([0-9:]+)[^ ]* .*CURATOR *: /\1 /' > out/curator.txt || true
           cat out/curator.txt

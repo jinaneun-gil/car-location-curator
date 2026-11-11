@@ -23,6 +23,11 @@ import android.car.VehiclePropertyIds
 import android.car.hardware.property.CarPropertyManager
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.location.LocationListener
+import android.location.LocationManager
+import android.media.MediaMetadata
+import android.media.session.MediaSession
+import android.media.session.PlaybackState
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -70,6 +75,12 @@ class CuratorService : Service() {
     private var naviReady = false
     private var routeActive = false
     private var waypoints = 0
+    private var locationStarted = false
+    private var fixLat = 0.0
+    private var fixLon = 0.0
+    private var fixClock = Double.NEGATIVE_INFINITY
+    private var onGps: Boolean? = null
+    private lateinit var media: MediaSession
 
     private fun log(text: String) { Log.i("CURATOR", text) }
 
@@ -92,7 +103,60 @@ class CuratorService : Service() {
         startTts()
         startNavi()
         Now.onCommand = { command -> handler.post { handleCommand(command) } }
+        startMedia()
         handler.postDelayed(::tick, 3000)
+    }
+
+    // Publishes what is playing so the system media card can show it beside the navigation map.
+    private fun startMedia() {
+        media = MediaSession(this, "curator")
+        media.setCallback(object : MediaSession.Callback() {
+            override fun onSkipToNext() = handleCommand("next")
+            override fun onStop() = handleCommand("next")
+        })
+        media.isActive = true
+        showMedia(null)
+    }
+
+    private fun showMedia(place: Place?) {
+        val title = place?.name ?: "다음 이야기를 준비 중"
+        val subtitle = when {
+            place == null -> "지나는 길에"
+            place.isAd -> "광고 · ${place.coupon}"
+            else -> "지나는 길에 · 이야기"
+        }
+        media.setMetadata(
+            MediaMetadata.Builder()
+                .putString(MediaMetadata.METADATA_KEY_TITLE, title)
+                .putString(MediaMetadata.METADATA_KEY_ARTIST, subtitle)
+                .build(),
+        )
+        val state = if (place == null) PlaybackState.STATE_PAUSED else PlaybackState.STATE_PLAYING
+        media.setPlaybackState(
+            PlaybackState.Builder()
+                .setState(state, 0, 1f)
+                .setActions(PlaybackState.ACTION_SKIP_TO_NEXT or PlaybackState.ACTION_STOP)
+                .build(),
+        )
+    }
+
+    // Retried every tick until the location permission is granted.
+    private fun startLocation() {
+        try {
+            getSystemService(LocationManager::class.java).requestLocationUpdates(
+                LocationManager.GPS_PROVIDER, 1000L, 0f,
+                LocationListener {
+                    fixLat = it.latitude
+                    fixLon = it.longitude
+                    fixClock = clock
+                },
+                Looper.getMainLooper(),
+            )
+            locationStarted = true
+            log("location started")
+        } catch (e: SecurityException) {
+            Unit
+        }
     }
 
     private fun startNavi() {
@@ -204,6 +268,7 @@ class CuratorService : Service() {
         }
         current = null
         Now.playing = null
+        showMedia(null)
         restUntil = clock + Planner.Options().gapSec
         log("done ${item.id}")
     }
@@ -221,6 +286,7 @@ class CuratorService : Service() {
     private fun tick() {
         clock++
         try {
+            if (!locationStarted) startLocation()
             readVehicle()
             if (Now.gear == "GEAR_DRIVE") drive()
         } catch (t: Throwable) {
@@ -230,8 +296,19 @@ class CuratorService : Service() {
     }
 
     private fun drive() {
-        if (posM >= route.length) restartDemo()
-        posM += Now.speedKmh / 3.6
+        // A fresh GPS fix on the route wins; otherwise advance along the demo route by the vehicle speed.
+        val (gpsM, offM) = route.locate(fixLat, fixLon)
+        val gps = clock - fixClock <= 3 && offM < 100
+        if (gps != onGps) {
+            onGps = gps
+            log(if (gps) "position from gps" else "position from speed")
+        }
+        if (gps) {
+            posM = gpsM
+        } else {
+            if (posM >= route.length) restartDemo()
+            posM += Now.speedKmh / 3.6
+        }
         Now.posM = posM
         if (current != null && clock > playDeadline) finishSpeech()
         if (current != null || !ttsReady || clock < restUntil) return
@@ -255,6 +332,7 @@ class CuratorService : Service() {
         lastCategory = next.category
         playDeadline = clock + next.dur + 15
         Now.playing = place
+        showMedia(place)
         if (Now.heard.none { it.id == place.id }) Now.heard.add(place)
         log("play ${next.id} ${next.version} at ${posM.toInt()}m")
         val text = if (next.version == "long") place.long else place.short

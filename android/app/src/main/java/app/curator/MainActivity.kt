@@ -127,6 +127,7 @@ class MainActivity : Activity() {
             addView(panel)
         })
         car = Car.createCar(this)
+        requestPermissions(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), 0)
         startForegroundService(Intent(this, CuratorService::class.java))
         render()
     }
