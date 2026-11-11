@@ -44,9 +44,15 @@ object Now {
     @Volatile var places: List<Place> = emptyList()
     @Volatile var posM = 0.0
     @Volatile var progress = 0f
-    @Volatile var mediaToken: android.media.session.MediaSession.Token? = null
     val heard = java.util.concurrent.CopyOnWriteArrayList<Place>()
 }
+
+// One session for both the playback service and the media card service, whichever starts first.
+private var session: MediaSession? = null
+
+@Synchronized
+fun sharedSession(context: android.content.Context): MediaSession =
+    session ?: MediaSession(context, "curator").also { session = it }
 
 // Runs as a foreground service so speech continues behind navigation or while driving.
 class CuratorService : Service() {
@@ -110,13 +116,12 @@ class CuratorService : Service() {
 
     // Publishes what is playing so the system media card can show it beside the navigation map.
     private fun startMedia() {
-        media = MediaSession(this, "curator")
+        media = sharedSession(applicationContext)
         media.setCallback(object : MediaSession.Callback() {
             override fun onSkipToNext() = handleCommand("next")
             override fun onStop() = handleCommand("next")
         })
         media.isActive = true
-        Now.mediaToken = media.sessionToken
         showMedia(null)
     }
 

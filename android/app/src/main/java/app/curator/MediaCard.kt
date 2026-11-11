@@ -8,7 +8,7 @@ import android.service.media.MediaBrowserService
 class MediaCard : MediaBrowserService() {
     override fun onCreate() {
         super.onCreate()
-        Now.mediaToken?.let { sessionToken = it }
+        sessionToken = sharedSession(applicationContext).sessionToken
     }
 
     override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?) = BrowserRoot("root", null)
