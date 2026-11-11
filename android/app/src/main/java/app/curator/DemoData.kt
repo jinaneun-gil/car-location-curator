@@ -44,8 +44,8 @@ fun parseContent(text: String): List<Place> {
     }
 }
 
-class Route(private val points: List<Pair<Double, Double>>, val maneuversM: List<Double>) {
-    private val cumulative = points.indices.runningFold(0.0) { sum, i ->
+class Route(val points: List<Pair<Double, Double>>, val maneuversM: List<Double>) {
+    val cumulative = points.indices.runningFold(0.0) { sum, i ->
         if (i == 0) sum else sum + dist(points[i - 1], points[i])
     }.drop(1)
 

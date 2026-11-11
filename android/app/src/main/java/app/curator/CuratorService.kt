@@ -35,6 +35,10 @@ object Now {
     @Volatile var playing: Place? = null
     @Volatile var notice = ""
     @Volatile var onCommand: ((String) -> Unit)? = null
+    @Volatile var route: Route? = null
+    @Volatile var places: List<Place> = emptyList()
+    @Volatile var posM = 0.0
+    @Volatile var progress = 0f
     val heard = java.util.concurrent.CopyOnWriteArrayList<Place>()
 }
 
@@ -81,6 +85,8 @@ class CuratorService : Service() {
 
         route = Route.parse(assets.open("route.json").bufferedReader().readText())
         places = route.onRoute(parseContent(assets.open("content.js").bufferedReader().readText()))
+        Now.route = route
+        Now.places = places
         vehicle = Vehicle(this).also { it.initialize() }
         car = Car.createCar(this)
         startTts()
@@ -186,6 +192,7 @@ class CuratorService : Service() {
             finishSpeech()
             return
         }
+        Now.progress = sentenceIndex.toFloat() / sentences.size
         tts.speak(sentences[sentenceIndex++], true)
     }
 
@@ -225,6 +232,7 @@ class CuratorService : Service() {
     private fun drive() {
         if (posM >= route.length) restartDemo()
         posM += Now.speedKmh / 3.6
+        Now.posM = posM
         if (current != null && clock > playDeadline) finishSpeech()
         if (current != null || !ttsReady || clock < restUntil) return
 

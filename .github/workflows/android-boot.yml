@@ -118,6 +118,10 @@ jobs:
           "$ADB" exec-out screencap -p > out/2-driving.png || true
           sleep 100
           "$ADB" exec-out screencap -p > out/3-later.png || true
+          curl -s -m 20 -X PUT "$VC/vehicle/controls?speed=0&accelerator=0&brake=50" -w ' stop %{http_code}\n' >> out/console.txt || true
+          curl -s -m 20 -X PUT "$VC/vehicle/gear?gear=Park" -w ' park %{http_code}\n' >> out/console.txt || true
+          sleep 5
+          "$ADB" exec-out screencap -p > out/4-parked-after.png || true
           "$ADB" shell dumpsys activity activities | grep -E 'ResumedActivity' > out/resumed.txt || true
           "$ADB" logcat -d > out/logcat.txt || true
           grep ' CURATOR' out/logcat.txt | sed -E 's/^[0-9-]+ ([0-9:]+)[^ ]* .*CURATOR *: /\1 /' > out/curator.txt || true
