@@ -44,6 +44,7 @@ object Now {
     @Volatile var places: List<Place> = emptyList()
     @Volatile var posM = 0.0
     @Volatile var progress = 0f
+    @Volatile var mediaToken: android.media.session.MediaSession.Token? = null
     val heard = java.util.concurrent.CopyOnWriteArrayList<Place>()
 }
 
@@ -115,6 +116,7 @@ class CuratorService : Service() {
             override fun onStop() = handleCommand("next")
         })
         media.isActive = true
+        Now.mediaToken = media.sessionToken
         showMedia(null)
     }
 

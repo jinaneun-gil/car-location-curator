@@ -127,7 +127,10 @@ class MainActivity : Activity() {
             addView(panel)
         })
         car = Car.createCar(this)
-        requestPermissions(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), 0)
+        // The permission dialog is not allowed while driving and would block this screen, so ask only when missing.
+        if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), 0)
+        }
         startForegroundService(Intent(this, CuratorService::class.java))
         render()
     }

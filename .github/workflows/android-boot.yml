@@ -150,6 +150,7 @@ jobs:
           "$ADB" exec-out screencap -p > out/4-parked-after.png || true
           "$ADB" shell dumpsys activity activities | grep -E 'ResumedActivity' > out/resumed.txt || true
           "$ADB" shell dumpsys media_session > out/media_session.txt || true
+          "$ADB" shell dumpsys car_service --services CarMediaService > out/car_media.txt 2>&1 || true
           "$ADB" logcat -d > out/logcat.txt || true
           grep ' CURATOR' out/logcat.txt | sed -E 's/^[0-9-]+ ([0-9:]+)[^ ]* .*CURATOR *: /\1 /' > out/curator.txt || true
           cat out/curator.txt
