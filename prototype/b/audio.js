@@ -6,9 +6,10 @@
   let koreanVoice = null;
 
   // Prefer an explicit Korean voice; the default voice may not read Korean.
+  // Installed (local) voices first: Chrome's online Google voice goes silent after a few minutes.
   function pickVoice() {
     const voices = synth.getVoices().filter(v => /^ko/i.test(v.lang));
-    koreanVoice = voices.find(v => /google/i.test(v.name)) || voices[0] || null;
+    koreanVoice = voices.find(v => v.localService) || voices[0] || null;
   }
   if (synth) {
     pickVoice();
@@ -26,7 +27,12 @@
       clearTimeout(guard);
       done();
     };
-    const guard = setTimeout(finish, (text.length / 5 + 2) * 1000);
+    // If the browser hangs on an utterance, every later utterance queues behind it and the rest is silent.
+    // So on timeout, clear the stuck queue before moving on.
+    const guard = setTimeout(() => {
+      if (mine === token && synth) { synth.cancel(); synth.resume(); }
+      finish();
+    }, (text.length / 4 + 3) * 1000);
     App.showCaption(text, kind);
     if (!synth) return;
     const utterance = new SpeechSynthesisUtterance(text);
