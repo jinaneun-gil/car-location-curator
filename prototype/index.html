@@ -2,26 +2,40 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<title>프로토타입</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10151f">
+<title>지나는 길에 · 제주 드라이브</title>
 <link rel="stylesheet" href="b/style.css">
 <link rel="stylesheet" href="phone/phone.css">
+<link rel="stylesheet" href="b/map-first.css">
 </head>
 <body>
 <main class="stage">
   <section class="car" aria-label="차량 화면 시뮬레이션">
-    <div class="status"><span id="appName"></span><span>프로토타입 · 차량 신호는 시뮬레이션</span></div>
+    <div class="status"><span class="system-brand">JEJU DRIVE <span class="system-separator">/</span> 애월 → 곽지</span><span>프로토타입 · 차량 신호는 시뮬레이션</span></div>
     <div class="driving">
       <div class="speed"><b id="speed">0</b><small>km/h</small></div>
       <div id="gear" class="gearbox">P</div>
       <div id="tbt" class="tbt"></div>
+      <div class="drive-lanes" aria-hidden="true"><span></span><b>▴</b><span></span></div>
+      <span class="drive-caption">DRIVE</span>
     </div>
-    <div class="navi"><svg id="map" viewBox="0 0 400 400" role="img" aria-label="경로 지도"></svg><p id="waypoint" class="waypoint" role="status" hidden></p></div>
-    <div id="panel" class="app"></div>
-    <div class="gnb">앱 목록 · 즐겨찾는 앱 · 공조</div>
+    <div class="navi">
+      <svg id="map" viewBox="0 0 768 1024" role="img" aria-label="OpenStreetMap 기반 제주 애월~곽지 시연 경로"></svg>
+      <div class="turn-card"><span id="turnIcon" aria-hidden="true">↱</span><div><b id="turnDistance">주행 준비</b><span id="turnRoad">애월 → 곽지 · 일주서로</span></div></div>
+      <p id="waypoint" class="waypoint" role="status" hidden></p>
+      <div class="arrival-card"><div><b id="arrivalTime">제주 드라이브</b><span id="arrivalMeta">애월~곽지 · 약 3.1 km</span></div><span aria-hidden="true">↗</span></div>
+      <a class="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap 기여자</a>
+    </div>
+    <section class="app-window" aria-label="지나는 길에 앱">
+      <header class="app-toolbar"><span class="app-brand"><span id="brandIcon" aria-hidden="true"></span><span id="appName"></span></span><span class="app-location">제주 애월</span></header>
+      <div id="panel" class="app"></div>
+    </section>
+    <footer class="gnb"><div class="dock"><span class="dock-item" aria-label="앱 목록" data-icon="grid"></span><span class="dock-item selected" aria-label="지도" data-icon="map"></span><span class="dock-item" aria-label="오디오" data-icon="audio"></span><span class="dock-item" aria-label="전화" data-icon="phone"></span></div><div class="climate"><span data-icon="wind" aria-hidden="true"></span><span>21.0°</span><small>AUTO</small></div><time id="clock">14:32</time></footer>
   </section>
 
   <aside id="console" class="console" aria-label="차량 신호 조작 패널">
-    <h1>차량 신호 조작</h1>
+    <div class="console-heading"><span class="console-kicker">DEMO CONTROLS</span><h1>드라이브 시뮬레이터</h1><p>차량 신호를 바꾸며 화면을 확인하세요.</p></div>
     <button id="showPhone">폰 앱 보기</button>
     <button id="start">주행 시작</button>
     <div class="row">
@@ -43,6 +57,7 @@
 </main>
 
 <script src="shared/app.js"></script>
+<script src="b/icons.js"></script>
 <script src="a/route.js"></script>
 <script src="b/content.js"></script>
 <script src="a/planner.js"></script>

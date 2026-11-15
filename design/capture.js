@@ -2,13 +2,15 @@
 // Run from the repository root: npm i --no-save playwright && npx playwright install chromium && node design/capture.js
 // Time is faked and speech is replaced by a silent stand-in that lasts as long as real speech, so a run takes about a minute.
 const path = require('node:path');
-const { chromium } = require('playwright');
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const OUT = __dirname + path.sep;
 const PAGE = 'file://' + path.join(__dirname, '..', 'prototype', 'index.html');
 (async () => {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: process.env.BROWSER_EXECUTABLE || undefined });
+  const errors = [];
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 2, locale: 'ko-KR', timezoneId: 'Asia/Seoul' });
   const page = await ctx.newPage();
+  page.on('pageerror', error => errors.push(error.message));
   await page.clock.install({ time: new Date('2026-11-14T14:00:00+09:00') });
   await page.addInitScript(() => {
     let current = null;
@@ -23,8 +25,14 @@ const PAGE = 'file://' + path.join(__dirname, '..', 'prototype', 'index.html');
   await page.goto(PAGE);
   await page.clock.runFor(500);
   const car = () => page.locator('.car');
-  const until = async (sel, max = 300) => { for (let i = 0; i < max && !(await page.$(sel)); i++) await page.clock.runFor(1000); };
-  const shot = async (name, loc = car()) => { await loc.screenshot({ path: OUT + name }); console.log('saved', name); };
+  const until = async (sel, max = 300) => {
+    for (let i = 0; i < max && !(await page.$(sel)); i++) await page.clock.runFor(1000);
+    if (!(await page.$(sel))) throw new Error(`State not reached: ${sel}`);
+  };
+  const shot = async (name, loc = car()) => {
+    if (name.startsWith('phone-')) await page.locator('#phone').evaluate(el => { el.style.maxHeight = 'none'; el.style.overflow = 'visible'; });
+    await loc.screenshot({ path: OUT + name }); console.log('saved', name);
+  };
 
   await page.click('[data-topic="history"]');
   await page.click('[data-topic="nature"]');
@@ -89,5 +97,6 @@ const PAGE = 'file://' + path.join(__dirname, '..', 'prototype', 'index.html');
   await until('.now.story');
   await page.clock.runFor(3000);
   await shot('car-09-portrait-driving.png');
+  if (errors.length) throw new Error(errors.join('\n'));
   await browser.close();
 })().catch(e => { console.error('FAILED', e); process.exit(1); });

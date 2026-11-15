@@ -8,6 +8,11 @@ val copyContent = tasks.register<Copy>("copyContent") {
     from("../../prototype/b/content.js")
     into(layout.buildDirectory.dir("generated/sharedAssets"))
 }
+val copyMap = tasks.register<Copy>("copyMap") {
+    from("../../prototype/assets")
+    include("aewol-map.png", "map-config.json")
+    into(layout.buildDirectory.dir("generated/sharedAssets"))
+}
 
 android {
     namespace = "app.curator"
@@ -30,7 +35,7 @@ android {
     kotlinOptions { jvmTarget = "17" }
 }
 
-tasks.named("preBuild") { dependsOn(copyContent) }
+tasks.named("preBuild") { dependsOn(copyContent, copyMap) }
 
 dependencies {
     implementation("ai.pleos.playground:Vehicle:2.3.2")

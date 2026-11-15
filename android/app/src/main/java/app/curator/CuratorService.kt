@@ -193,7 +193,7 @@ class CuratorService : Service() {
     private fun handleCommand(command: String) {
         log("command $command")
         when (command) {
-            "next" -> if (current != null) tts.stop()
+            "next", "stop" -> if (current != null) tts.stop()
             "go" -> (Now.playing ?: Now.heard.lastOrNull())?.let(::addToRoute)
         }
     }

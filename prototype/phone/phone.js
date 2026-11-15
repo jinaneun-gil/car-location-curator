@@ -13,14 +13,15 @@
 
   root.innerHTML = `
     <div class="phone-top">
-      <b>${App.NAME} 폰 앱</b>
-      <button id="showConsole">차량 신호 보기</button>
+      <div><span class="phone-brand">${App.icon('route')}${App.NAME}</span><p class="phone-caption">드라이브에서 발견한 즐거움</p></div>
+      <button id="showConsole">차량으로</button>
     </div>
-    <div class="row">
-      <button id="tabBiz" aria-pressed="true">광고주</button>
-      <button id="tabUser" aria-pressed="false">내 쿠폰</button>
+    <div class="row phone-tabs" aria-label="동반 앱 메뉴">
+      <button id="tabUser" aria-pressed="false">${App.icon('ticket')}내 쿠폰</button>
+      <button id="tabBiz" aria-pressed="true">${App.icon('pin')}우리 가게</button>
     </div>
     <section id="biz">
+      <div class="phone-section-head"><h2>길 위의 손님에게<br>가게를 알려보세요.</h2><p>가게 근처를 지나는 운전자에게<br>짧은 음성과 혜택으로 소개합니다.</p></div>
       <form id="adForm">
         <label>상호 <input name="sponsor" required maxlength="20" placeholder="가상 상호"></label>
         <label>업종 <select name="category">${CATEGORIES.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label>
@@ -48,7 +49,7 @@
         <label>쿠폰 (선택) <input name="coupon" maxlength="20" placeholder="예: 음료 10% 할인"></label>
         <p id="adPreview" class="preview" role="status"></p>
         <p class="note">운전 습관이나 속도로 사람을 고르지 않습니다. 동의한 사용자에게만 관심 업종이 반영됩니다.</p>
-        <button type="submit">등록 신청</button>
+        <button type="submit">광고 등록 신청${App.icon('arrow')}</button>
       </form>
       <p id="adResult" class="note" role="status"></p>
       <h3>내 광고 성과</h3>
@@ -56,7 +57,7 @@
       <button id="clearAds">등록 광고 초기화</button>
     </section>
     <section id="user" hidden>
-      <h3>저장한 쿠폰</h3>
+      <div class="phone-section-head"><h2>드라이브의 작은 혜택</h2><p>차에서 만난 가게의 쿠폰을 모았어요.<br>매장에서 사용할 쿠폰을 선택해 주세요.</p></div>
       <ul id="wallet"></ul>
     </section>`;
 
@@ -134,7 +135,9 @@
   };
 
   $('wallet').onclick = e => {
-    const c = coupons.find(item => item.id === e.target.dataset.use);
+    const button = e.target.closest('button[data-use]');
+    if (!button) return;
+    const c = coupons.find(item => item.id === button.dataset.use);
     if (!c) return;
     used.add(c.id);
     App.log(`쿠폰 사용: ${c.sponsor}`);
@@ -145,11 +148,11 @@
     const registered = App.contents.filter(c => c.id.startsWith('reg-'));
     $('adStats').innerHTML = registered.map(c => {
       const s = App.stats[c.id] || { plays: 0, goes: 0, coupons: 0 };
-      return `<li><b>${c.sponsor}</b><br>음성 노출 ${s.plays} · 경유지 추가 ${s.goes} · 쿠폰 저장 ${s.coupons}</li>`;
-    }).join('') || '<li>등록한 광고가 없습니다</li>';
-    $('wallet').innerHTML = coupons.map(c => `<li><b>${c.sponsor}</b><br>${c.coupon}<br>${
-      used.has(c.id) ? '사용 완료' : `<button data-use="${c.id}">매장에서 사용</button>`
-    }</li>`).join('') || '<li>저장한 쿠폰이 없습니다</li>';
+      return `<li><span class="result-label">게시 중 · 시뮬레이션</span><br><b>${c.sponsor}</b><div class="stats-values"><span>음성 노출<b>${s.plays}</b></span><span>경유지 추가<b>${s.goes}</b></span><span>쿠폰 저장<b>${s.coupons}</b></span></div></li>`;
+    }).join('') || '<li>아직 등록한 광고가 없어요.<br>첫 광고를 등록하면 성과를 확인할 수 있어요.</li>';
+    $('wallet').innerHTML = coupons.map(c => `<li class="wallet-item"><span class="coupon-category">${App.icon('ticket')}드라이브 혜택</span><b>${c.sponsor}</b><div class="coupon-value">${c.coupon}</div>${
+      used.has(c.id) ? `<div class="coupon-used">${App.icon('check')}사용 완료</div>` : `<button data-use="${c.id}">매장에서 사용${App.icon('arrow')}</button>`
+    }</li>`).join('') || `<li class="wallet-empty">${App.icon('ticket')}<strong>아직 저장한 쿠폰이 없어요</strong>정차 후 차량 화면의 쿠폰 QR을 스캔하면<br>여기에 안전하게 보관해 드릴게요.</li>`;
   };
   loadAds().forEach(App.addAd);
   showPreview();
