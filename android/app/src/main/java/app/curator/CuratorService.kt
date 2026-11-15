@@ -93,6 +93,10 @@ class CuratorService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    // After the process dies the system would restart this service from the background, where
+    // Android 14 forbids startForeground and the app crashes. MainActivity starts it again instead.
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int) = START_NOT_STICKY
+
     override fun onCreate() {
         super.onCreate()
         val channel = NotificationChannel("curator", "안내", NotificationManager.IMPORTANCE_LOW)
