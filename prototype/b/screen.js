@@ -30,6 +30,19 @@
     ((1 - Math.asinh(Math.tan(lat * Math.PI / 180)) / Math.PI) / 2 * 32768 - 13147) * 256,
   ];
   const line = points => points.map(p => xy(p).map(v => v.toFixed(1)).join(',')).join(' ');
+  // Fill any app-window aspect ratio and keep the live car inside the viewport.
+  function fitMap(x, y) {
+    const bounds = $('map').getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    const ratio = bounds.width / bounds.height;
+    const width = Math.min(768, 1024 * ratio), height = width / ratio;
+    const left = Math.max(0, Math.min(768 - width, x - width / 2));
+    const top = Math.max(0, Math.min(1024 - height, y - height / 2));
+    $('map').setAttribute('viewBox', `${left} ${top} ${width} ${height}`);
+  }
+  new ResizeObserver(() => {
+    if (lastVehicle) fitMap(...xy(App.route.pointAt(lastVehicle.posM)));
+  }).observe($('map'));
 
   App.redrawMap = () => {
     const places = App.contents.map(c => {
@@ -235,8 +248,8 @@
     $('tbt').textContent = v.tbt;
     const nextTurn = App.route.maneuvers.find(m => m.routeM > v.posM);
     $('turnDistance').textContent = v.gear === 'P' ? '정차 중' : nextTurn ? `${Math.max(0, Math.round(nextTurn.routeM - v.posM))} m` : '도착지 근처';
-    $('turnRoad').textContent = v.gear === 'P' ? '애월 → 곽지 · 일주서로' : nextTurn && /왼쪽/.test(nextTurn.text) ? '왼쪽 방향 · 경로 안내' : '오른쪽 방향 · 경로 안내';
-    $('turnIcon').textContent = v.gear === 'P' ? 'P' : nextTurn && /왼쪽/.test(nextTurn.text) ? '↰' : '↱';
+    $('turnRoad').textContent = v.gear === 'P' ? '애월 → 곽지 · 일주서로' : !nextTurn ? '곽지 · 경로 끝' : /왼쪽/.test(nextTurn.text) ? '왼쪽 방향 · 경로 안내' : '오른쪽 방향 · 경로 안내';
+    $('turnIcon').textContent = v.gear === 'P' ? 'P' : !nextTurn ? '●' : /왼쪽/.test(nextTurn.text) ? '↰' : '↱';
     const remaining = Math.max(0, App.route.length - v.posM);
     const minutes = Math.max(1, Math.ceil(remaining / Math.max(v.speedKmh / 3.6, 1) / 60));
     const clock = new Date();
@@ -247,6 +260,7 @@
     const passed = App.route.points.filter((p, i) => App.route.project(p[0], p[1]) <= v.posM || i === 0);
     $('passed').setAttribute('points', line([...passed, App.route.pointAt(v.posM)]));
     const [x, y] = xy(App.route.pointAt(v.posM));
+    fitMap(x, y);
     const dot = $('carDot');
     dot.setAttribute('transform', `translate(${x},${y})`);
   };

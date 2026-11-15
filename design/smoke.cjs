@@ -36,6 +36,11 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
         assert(button.left >= geometry.panel.left && button.right <= geometry.panel.right + 1, `Button clipped at ${width}`);
         assert(button.height >= 70, `Touch target too small at ${width}`);
       });
+      const mapAspect = await page.locator('#map').evaluate(el => {
+        const bounds = el.getBoundingClientRect(), box = el.viewBox.baseVal;
+        return Math.abs(bounds.width / bounds.height - box.width / box.height);
+      });
+      assert(mapAspect < .02, `Map letterboxing at ${width}`);
     }
     await page.setViewportSize({ width: 1600, height: 1000 });
     await page.evaluate(() => { App.showNowPlaying('a1', 'short'); App.setMode('parked'); });

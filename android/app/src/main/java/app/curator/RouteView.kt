@@ -11,7 +11,7 @@ import android.view.View
 import org.json.JSONObject
 import kotlin.math.PI
 import kotlin.math.asinh
-import kotlin.math.min
+import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.tan
 
@@ -34,15 +34,18 @@ class RouteView(context: Context) : View(context) {
         super.onDraw(canvas)
         val image = bitmap ?: return
         canvas.drawColor(Color.parseColor("#E6E5DA"))
-        val scale = min(width.toFloat() / image.width, height.toFloat() / image.height)
-        val offsetX = (width - image.width * scale) / 2
-        val offsetY = (height - image.height * scale) / 2
+        val scale = max(width.toFloat() / image.width, height.toFloat() / image.height)
+        val route = Now.route
+        val passed = route?.cumulative?.indexOfLast { it <= Now.posM }?.coerceAtLeast(0) ?: 0
+        val carPoint = route?.points?.getOrNull(passed)
+        val focusX = carPoint?.let { x(it.second) } ?: image.width / 2f
+        val focusY = carPoint?.let { y(it.first) } ?: image.height / 2f
+        val offsetX = (width / 2f - focusX * scale).coerceIn(minOf(0f, width - image.width * scale), 0f)
+        val offsetY = (height / 2f - focusY * scale).coerceIn(minOf(0f, height - image.height * scale), 0f)
         canvas.save()
         canvas.translate(offsetX, offsetY); canvas.scale(scale, scale)
         canvas.drawBitmap(image, 0f, 0f, paint)
-        val route = Now.route
         if (route != null) {
-            val passed = route.cumulative.indexOfLast { it <= Now.posM }.coerceAtLeast(0)
             val path = Path().apply {
                 route.points.forEachIndexed { i, point -> if (i == 0) moveTo(x(point.second), y(point.first)) else lineTo(x(point.second), y(point.first)) }
             }
